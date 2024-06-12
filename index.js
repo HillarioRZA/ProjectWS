@@ -18,7 +18,8 @@ const JWT_KEY = process.env.jwt_key
 
 //dependecy
 const sequelize = require('./config/conn'); // Import the database connection
-const User = require('./models/anime'); 
+const Anime = require('./models/anime');
+const User = require('./models/users');
 
 app.listen(port, async () => {
   console.log(`Application is running and listening at http://localhost:${port}/`);
@@ -35,9 +36,10 @@ sequelize.authenticate()
     console.error('Unable to connect to the database:', err);
 });
 
-app.get('/', async (req, res) => {
+app.get('/api/test/user', async (req, res) => {
   try {
       const anime = await User.findAll();
+      console.log(anime)
       res.status(201).send(anime);
   } catch (err) {
       res.status(400).send(err);

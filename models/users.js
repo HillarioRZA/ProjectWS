@@ -1,21 +1,17 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const sequelize = require('../config/conn'); // Import the database connection
 
-const Anime = sequelize.define('Anime', {
+const User = sequelize.define('User', {
     id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         primaryKey:true
     },
-    title: {
+    email: {
         type: DataTypes.STRING,
         allowNull: false,
     },
-    description: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    streaming_link: {
+    password: {
         type: DataTypes.STRING,
         allowNull: false
     },
@@ -23,10 +19,14 @@ const Anime = sequelize.define('Anime', {
         type: DataTypes.INTEGER,
         allowNull: false
     },
+    role: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
 },{
     sequelize,
-    tableName:"anime",
+    tableName:"users",
     underscored:true,
 });
 
-module.exports = Anime;
+module.exports = User;
