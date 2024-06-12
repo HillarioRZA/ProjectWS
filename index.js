@@ -14,7 +14,7 @@ const Joi = require('joi').extend(require('@joi/date'))
 
 const jwt = require("jsonwebtoken");
 //Deklarasi JWT Key
-const JWT_KEY = process.env.jwt_key
+const JWT_KEY = "pejuang_proyek_ws"
 
 //dependecy
 const sequelize = require('./config/conn'); // Import the database connection
@@ -101,4 +101,47 @@ app.post('/api/user', async (req,res) => {
       "msg" : error
     })
   }
+})
+// const checkUsername = async (username) => { 
+//   console.log('b')
+//   let check;
+//   if(username.length > 0) {
+//       check = await User.findOne({
+//       where: {username:username}
+//     })
+//   }
+//   if(check.length == 0){
+//     throw new Error("username not found")
+//   }
+// }
+// const checkPassword = async (username,password) => { 
+//   console.log('a')
+//   let check = await User.findOne({
+//     where: {username:username}
+//   })
+//   if(check.password != password){
+//     throw new error("password salah")
+//   }
+// }
+
+//middleware shit
+async function checkUsername (req, res, next) {
+  const username = req.body.username
+  let checkUser = await User.findOne({
+      where:{username:username}
+  })
+  if (checkUser == null) {
+      return res.status(404).send({ message: "Username tidak terdaftar" })
+  }
+  req.body.userData = checkUser
+  next()
+} 
+app.post('/api/login',[checkUsername,] ,async(req,res) => {
+  const {username,password,userData} = req.body
+  if(password!= userData.password) return res.status(400).send({"msg" : "password salah"})
+  let token = jwt.sign({
+    userrole: userData.role,
+    is_premium: userData.is_premium
+  }, JWT_KEY, {expiresIn: '1h'})
+  return res.status(200).send({msg : 'berhasil login', token : token})
 })

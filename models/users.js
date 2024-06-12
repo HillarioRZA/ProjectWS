@@ -31,6 +31,10 @@ const User = sequelize.define('User', {
     fullname: {
         type:DataTypes.STRING,
         allowNull:false
+    },
+    saldo:{
+        type:DataTypes.INTEGER,
+        allowNull:true
     }
 },{
     sequelize,
