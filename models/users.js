@@ -35,7 +35,7 @@ const User = sequelize.define('User', {
     saldo:{
         type:DataTypes.INTEGER,
         allowNull:true
-    }
+    },
 },{
     sequelize,
     tableName:"users",
