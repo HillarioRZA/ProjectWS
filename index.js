@@ -1,12 +1,6 @@
 const dotenv = require('dotenv')
-require('dotenv').config()
-const buf = Buffer.from('BASIC=basic')
-const config = dotenv.parse(buf) // will return an object
-// console.log(typeof config, config) // object { BASIC : 'basic' }
-// console.log(process.env.api_key) // object { BASIC : 'basic' }
 const axios = require('axios').default;
 const today = new Date()
-const Sequelize = require("sequelize");
 const {Model, DataTypes, fn,Op, STRING} = require("sequelize");
 const express = require('express');
 const { any, string } = require('joi'); 
@@ -21,3 +15,31 @@ const Joi = require('joi').extend(require('@joi/date'))
 const jwt = require("jsonwebtoken");
 //Deklarasi JWT Key
 const JWT_KEY = process.env.jwt_key
+
+//dependecy
+const sequelize = require('./config/conn'); // Import the database connection
+const User = require('./models/anime'); 
+
+app.listen(port, async () => {
+  console.log(`Application is running and listening at http://localhost:${port}/`);
+});
+sequelize.authenticate()
+.then(() => {
+    console.log('Connection has been established successfully.');
+    return sequelize.sync(); // Sync all defined models to the DB
+})
+.then(() => {
+    console.log('Database synchronized');
+})
+.catch(err => {
+    console.error('Unable to connect to the database:', err);
+});
+
+app.get('/', async (req, res) => {
+  try {
+      const anime = await User.findAll();
+      res.status(201).send(anime);
+  } catch (err) {
+      res.status(400).send(err);
+  }
+});
