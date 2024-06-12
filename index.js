@@ -36,6 +36,8 @@ sequelize.authenticate()
     console.error('Unable to connect to the database:', err);
 });
 
+
+
 app.get('/api/test/user', async (req, res) => {
   try {
       const anime = await User.findAll();
@@ -45,3 +47,58 @@ app.get('/api/test/user', async (req, res) => {
       res.status(400).send(err);
   }
 });
+
+app.post('/api/user', async (req,res) => {
+  const { username, email, password, confirm_password, fullname } = req.body;
+  const schema = Joi.object({
+      username: Joi.string().min(3).max(15).required().messages({
+          "any.required": "Field tidak boleh kosong!",
+          "string.empty": "Field tidak boleh kosong!",
+          "string.min": "panjang username minimal 3 character!",
+          "string.max": "panjang username maximal 15 character",
+      }),
+      email: Joi.string().email().required().messages({
+          "any.required": "Field tidak boleh kosong!",
+          "string.empty": "Field tidak boleh kosong!",
+          "string.email": "Email tidak valid!"
+      }),
+      password: Joi.string().min(5).required().messages({
+          "any.required": "password tidak boleh kosong!",
+          "string.empty": "password tidak boleh kosong!",
+          "string.min": "password minimal 5 character!",
+      }),
+      confirm_password: Joi.string().valid(Joi.ref('password')).required().messages({
+          "any.required": "confirm_password tidak boleh kosong!",
+          "any.only": "Password dan confirm password harus sama!"
+      }),
+      fullname: Joi.string().required().messages({
+          "any.required": "fullname tidak boleh kosong!",
+          "string.empty": "fullname tidak boleh kosong!"
+      })
+  })
+  try {
+    await schema.validateAsync({
+      username,
+      email,
+      password,
+      confirm_password,
+      fullname
+    })
+    const insert = await User.create({
+      username:username,
+      email:email,
+      password:password,
+      is_premium:0,
+      role:1,
+      fullname:fullname
+    })
+    return res.status(200).send({
+      "msg" : "user succesfully created",
+      "userdata" : insert
+    })
+  } catch (error) {
+    return res.status(400).send({
+      "msg" : error
+    })
+  }
+})
