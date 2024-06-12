@@ -344,3 +344,38 @@ app.get('/api/user/watchlist', [checkToken], async(req,res)=> {
   const formatedWL = await formatWL(userWL);
   return res.status(200).send({watchlist : formatedWL})
 })
+
+app.delete('/api/user/watchlist', [checkToken], async(req,res)=> {
+  const{userData,id}= req.body
+  let selectedUser = await User.findOne({
+    where : {username : userData.username}
+  })
+  console.log("a")
+  let userWL = await Watchlist.findAll({
+    where : {user_id : selectedUser.id,}
+  })
+  console.log("b")
+
+  let selectedIndexUser = await User.findOne({
+    where:{username : userData.username}
+  })
+  console.log("c")
+  console.log(selectedIndexUser)
+  let selectedIndexWL = await Watchlist.findOne({
+    where:{
+      [Op.and]:[
+        {user_id : selectedIndexUser.id},
+        {anime_id: id}
+      ]
+    }
+  })
+  console.log("d")
+  if(selectedIndexWL == null) return res.status(404).send({msg : "anime tidak ada di watchlist user"})
+  let deletedWL = await Watchlist.destroy({
+    where:{id:selectedIndexWL.id}
+  })
+  console.log("e")
+  
+  const formatedWL = await formatWL(userWL);
+  return res.status(200).send({body : "berhasil delete dari watchlist"})
+})
