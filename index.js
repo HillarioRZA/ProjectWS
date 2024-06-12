@@ -208,28 +208,32 @@ app.post('/api/sub',[checkToken],async (req,res) => {
 })
 
 app.get('/api/anime/:searchTitle', [checkToken],async(req,res) => {
-  const {userData} = req.body
-  const searchTitle = req.query.search
-  console.log(searchTitle)
-  let search = await Anime.findAll({attributes: ['title', 'description', 'streaming_link']})
-  if(!searchTitle) return res.status(200).send(search)
-  else{
-    const search = await Anime.findAll({
-      where : {
-        title:{
-          [Op.like]:`%${searchTitle}%`
-        }
-      }
-    },{
-      attributes:[title, description, streaming_link]
-    })
-    return res.status(200).send({
-      body : search
-    })
+  const {judul} = req.body
+  let result;
+  try {
+    result = await axios({
+      method: 'GET',
+      url: `https://kitsu.io/api/edge//anime?filter[text]=${judul}`,
+    });
+  } catch (err) {
+    return res.status(500).send({
+      error: err.message
+    });
   }
+  const animeList = result.data.data.map(anime => {
+    return {
+      id: anime.id,
+      title: anime.attributes.canonicalTitle,
+      link: anime.links.self,
+      description: anime.attributes.description,
+      averageRating: anime.attributes.averageRating,
+      posterImage: anime.attributes.posterImage.original
+    };
+  });
+  return res.status(200).send({body : animeList})
 })
 
-app.get('/api/anime/', [checkToken],async(req,res) => {
+app.get('/api/anime', [checkToken],async(req,res) => {
   const { limit, page } = req.body;
   if (!limit || !page) {
     return res.status(400).send({ msg: "field tidak boleh kosong" });
@@ -247,7 +251,6 @@ app.get('/api/anime/', [checkToken],async(req,res) => {
     });
   }
   
-  // Access the array inside the result object
   const animeList = result.data.data.map(anime => {
     return {
       id: anime.id,
@@ -262,3 +265,82 @@ app.get('/api/anime/', [checkToken],async(req,res) => {
   return res.status(200).json({ result: animeList });
 })
 
+app.post('/api/user/watchlist', [checkToken],async(req,res) => {
+  //asumsi di add pake ID
+  const{id,userData} = req.body
+  let selectedUser = await User.findOne({
+    where : {username : userData.username}
+  })
+  let checkUnique = await Watchlist.findOne({
+    where : {
+      [Op.and]:[
+        {user_id : selectedUser.id},
+        {anime_id : id}
+      ]
+    }
+  })
+  console.log(checkUnique)
+  if(checkUnique != null ) return res.status(400).send({msg : "anime sudah ada di watchlist anda"})
+  let addWL = await Watchlist.create({
+    user_id : selectedUser.id,
+    anime_id : id,
+    status : 'watching'
+  })
+  let result;
+  try {
+    result = await axios({
+      method: 'GET',
+      url: `https://kitsu.io/api/edge/anime/${id}`,
+    });
+  } catch (err) {
+    return res.status(500).send({
+      error: err.message
+    });
+  }
+  const anime = result.data.data;
+  const judul = anime.attributes.canonicalTitle;
+  return res.status(200).send({
+    msg : `berhasil add ${judul} ke watchlist Anda`
+  })
+})
+async function getAnimeTitle(anime_id) {
+  try {
+    const response = await axios.get(`https://kitsu.io/api/edge/anime/${anime_id}`);
+    return response.data.data.attributes.canonicalTitle;
+  } catch (error) {
+    console.error(`Error fetching anime title for ID ${anime_id}:`, error);
+    return null;
+  }
+}
+async function formatWL(watchlist) {
+  const updatedWatchlist = JSON.parse(JSON.stringify(watchlist));
+
+  let counter = 1;
+
+  for (let item of updatedWatchlist) {
+    delete item.id;
+    delete item.user_id;
+    item.id = counter++;
+
+    const title = await getAnimeTitle(item.anime_id);
+    if (title) {
+      item.anime_title = title; 
+      delete item.anime_id;
+    }
+  }
+
+  return updatedWatchlist;
+}
+
+
+app.get('/api/user/watchlist', [checkToken], async(req,res)=> {
+  const{userData}= req.body
+  let selectedUser = await User.findOne({
+    where : {username : userData.username}
+  })
+  let userWL = await Watchlist.findAll({
+    where : {user_id : selectedUser.id,}
+  })
+  const formatedWL = await formatWL(userWL);
+  return res.status(200).send({watchlist : formatedWL})
+})
