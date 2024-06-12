@@ -20,7 +20,7 @@ const JWT_KEY = "pejuang_proyek_ws"
 const sequelize = require('./config/conn'); // Import the database connection
 const Anime = require('./models/anime');
 const User = require('./models/users');
-const Subs = require('./models/subs');
+const Watchlist = require('./models/watchlist');
 
 app.listen(port, async () => {
   console.log(`Application is running and listening at http://localhost:${port}/`);
